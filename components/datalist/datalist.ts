@@ -16,7 +16,7 @@ import {BlockableUI} from '../common/api';
             <div class="ui-datalist-content ui-widget-content">
                 <ul class="ui-datalist-data">
                     <li *ngFor="let item of dataToRender;let i = index">
-                        <template [pTemplateWrapper]="itemTemplate" [item]="item" [index]="i"></template>
+                        <ng-template [pTemplateWrapper]="itemTemplate" [item]="item" [index]="i"></ng-template>
                     </li>
                 </ul>
             </div>
@@ -51,6 +51,8 @@ export class DataList implements AfterViewInit,AfterContentInit,DoCheck,Blockabl
     @Input() styleClass: string;
     
     @Input() paginatorPosition: string = 'bottom';
+    
+    @Output() onPage: EventEmitter<any> = new EventEmitter();
         
     @ContentChild(Header) header;
 
@@ -127,6 +129,11 @@ export class DataList implements AfterViewInit,AfterContentInit,DoCheck,Blockabl
         else {
             this.updateDataToRender(this.value);
         }
+        
+        this.onPage.emit({
+            first: this.first,
+            rows: this.rows
+        });
     }
 
     updateDataToRender(datasource) {

@@ -1,9 +1,11 @@
 import {NgModule,Component,ElementRef,OnInit,AfterViewInit,AfterContentInit,AfterViewChecked,DoCheck,OnDestroy,Input,Output,Renderer,EventEmitter,ContentChildren,
-        QueryList,ViewChild,TemplateRef,IterableDiffers,forwardRef,trigger,state,style,transition,animate,ChangeDetectorRef} from '@angular/core';
+        QueryList,ViewChild,TemplateRef,IterableDiffers,forwardRef,ChangeDetectorRef} from '@angular/core';
+import {trigger,state,style,transition,animate} from '@angular/animations';
 import {CommonModule} from '@angular/common';
 import {SelectItem} from '../common/api';
 import {SharedModule,PrimeTemplate} from '../common/shared';
 import {DomHandler} from '../dom/domhandler';
+import {ObjectUtils} from '../utils/ObjectUtils';
 import {NG_VALUE_ACCESSOR, ControlValueAccessor} from '@angular/forms';
 
 export const DROPDOWN_VALUE_ACCESSOR: any = {
@@ -24,10 +26,10 @@ export const DROPDOWN_VALUE_ACCESSOR: any = {
                 </select>
             </div>
             <div class="ui-helper-hidden-accessible">
-                <input #in type="text" readonly (focus)="onInputFocus($event)" (blur)="onInputBlur($event)" (keydown)="onKeydown($event)" [disabled]="disabled" [attr.tabindex]="tabindex">
+                <input #in [attr.id]="inputId" type="text" readonly (focus)="onInputFocus($event)" (blur)="onInputBlur($event)" (keydown)="onKeydown($event)" [disabled]="disabled" [attr.tabindex]="tabindex">
             </div>
             <label [ngClass]="{'ui-dropdown-label ui-inputtext ui-corner-all':true,'ui-dropdown-label-empty':!label}" *ngIf="!editable">{{label||'empty'}}</label>
-            <input type="text" class="ui-dropdown-label ui-inputtext ui-corner-all" *ngIf="editable" [value]="label" [disabled]="disabled"
+            <input type="text" class="ui-dropdown-label ui-inputtext ui-corner-all" *ngIf="editable" [value]="editableLabel" [disabled]="disabled" [attr.placeholder]="placeholder"
                         (click)="onEditableInputClick($event)" (input)="onEditableInputChange($event)" (focus)="onEditableInputFocus($event)" (blur)="onInputBlur($event)">
             <div class="ui-dropdown-trigger ui-state-default ui-corner-right">
                 <span class="fa fa-fw fa-caret-down ui-c"></span>
@@ -45,7 +47,7 @@ export const DROPDOWN_VALUE_ACCESSOR: any = {
                             'ui-dropdown-item-empty':!option.label||option.label.length === 0}"
                             (click)="onItemClick($event, option)">
                             <span *ngIf="!itemTemplate">{{option.label||'empty'}}</span>
-                            <template [pTemplateWrapper]="itemTemplate" [item]="option" *ngIf="itemTemplate"></template>
+                            <ng-template [pTemplateWrapper]="itemTemplate" [item]="option" *ngIf="itemTemplate"></ng-template>
                         </li>
                     </ul>
                 </div>
@@ -64,7 +66,7 @@ export const DROPDOWN_VALUE_ACCESSOR: any = {
             transition('hidden => visible', animate('400ms ease-out'))
         ])
     ],
-    providers: [DomHandler,DROPDOWN_VALUE_ACCESSOR]
+    providers: [DomHandler,ObjectUtils,DROPDOWN_VALUE_ACCESSOR]
 })
 export class Dropdown implements OnInit,AfterViewInit,AfterContentInit,AfterViewChecked,DoCheck,OnDestroy,ControlValueAccessor {
 
@@ -95,6 +97,10 @@ export class Dropdown implements OnInit,AfterViewInit,AfterContentInit,AfterView
     @Input() appendTo: any;
 
     @Input() tabindex: number;
+    
+    @Input() placeholder: string;
+    
+    @Input() inputId: string;
     
     @Output() onChange: EventEmitter<any> = new EventEmitter();
     
@@ -152,7 +158,7 @@ export class Dropdown implements OnInit,AfterViewInit,AfterContentInit,AfterView
     
     public selectedOptionUpdated: boolean;
         
-    constructor(public el: ElementRef, public domHandler: DomHandler, public renderer: Renderer, differs: IterableDiffers, private cd: ChangeDetectorRef) {
+    constructor(public el: ElementRef, public domHandler: DomHandler, public renderer: Renderer, differs: IterableDiffers, private cd: ChangeDetectorRef, public objectUtils: ObjectUtils) {
         this.differ = differs.find([]).create(null);
     }
     
@@ -202,7 +208,11 @@ export class Dropdown implements OnInit,AfterViewInit,AfterContentInit,AfterView
     }
     
     get label(): string {
-        return (this.editable && this.value) ? this.value : (this.selectedOption ? this.selectedOption.label : null);
+        return (this.selectedOption ? this.selectedOption.label : this.placeholder);
+    }
+    
+    get editableLabel(): string {
+        return this.value || (this.selectedOption ? this.selectedOption.label : null);
     }
     
     onItemClick(event, option) {
@@ -225,7 +235,12 @@ export class Dropdown implements OnInit,AfterViewInit,AfterContentInit,AfterView
     
     ngAfterViewChecked() {
         if(this.optionsChanged) {
-            this.domHandler.relativePosition(this.panel, this.container);
+            if (this.appendTo) {
+                this.domHandler.absolutePosition(this.panel, this.container);
+            } else {
+                this.domHandler.relativePosition(this.panel, this.container);
+            }        
+        
             this.optionsChanged = false;
         }
         
@@ -246,7 +261,7 @@ export class Dropdown implements OnInit,AfterViewInit,AfterContentInit,AfterView
     
     updateSelectedOption(val: any): void {
         this.selectedOption = this.findOption(val, this.optionsToDisplay);
-        if(!this.selectedOption && this.optionsToDisplay && this.optionsToDisplay.length && !this.editable) {
+        if(!this.placeholder && !this.selectedOption && this.optionsToDisplay && this.optionsToDisplay.length && !this.editable) {
             this.selectedOption = this.optionsToDisplay[0];
         }
         this.selectedOptionUpdated = true;
@@ -428,7 +443,7 @@ export class Dropdown implements OnInit,AfterViewInit,AfterContentInit,AfterView
         let index: number = -1;
         if(opts) {
             for(let i = 0; i < opts.length; i++) {
-                if((val == null && opts[i].value == null) || this.domHandler.equals(val, opts[i].value)) {
+                if((val == null && opts[i].value == null) || this.objectUtils.equals(val, opts[i].value)) {
                     index = i;
                     break;
                 }

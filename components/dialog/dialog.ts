@@ -1,4 +1,5 @@
-import {NgModule,Component,ElementRef,AfterViewInit,AfterViewChecked,OnDestroy,Input,Output,EventEmitter,Renderer,ContentChild,ViewChild,trigger,state,style,transition,animate} from '@angular/core';
+import {NgModule,Component,ElementRef,AfterViewInit,AfterViewChecked,OnDestroy,Input,Output,EventEmitter,Renderer,ContentChild,ViewChild} from '@angular/core';
+import {trigger,state,style,transition,animate} from '@angular/animations';
 import {CommonModule} from '@angular/common';
 import {DomHandler} from '../dom/domhandler';
 import {Header,SharedModule} from '../common/shared';
@@ -224,8 +225,8 @@ export class Dialog implements AfterViewInit,AfterViewChecked,OnDestroy {
             this.container.style.visibility = 'visible';
         }
         let viewport = this.domHandler.getViewport();
-        let x = (viewport.width - elementWidth) / 2;
-        let y = (viewport.height - elementHeight) / 2;
+        let x = Math.max((viewport.width - elementWidth) / 2, 0);
+        let y = Math.max((viewport.height - elementHeight) / 2, 0);
 
         this.container.style.left = x + 'px';
         this.container.style.top = y + 'px';

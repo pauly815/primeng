@@ -14,7 +14,7 @@ export const SPINNER_VALUE_ACCESSOR: any = {
     selector: 'p-spinner',
     template: `
         <span class="ui-spinner ui-widget ui-corner-all">
-            <input #in pInputText type="text" class="ui-spinner-input" [value]="valueAsString"
+            <input #in type="text" class="ui-spinner-input" [value]="valueAsString" class="ui-inputtext ui-widget ui-state-default ui-corner-all"
             [attr.size]="size" [attr.maxlength]="maxlength" [attr.tabindex]="tabindex" [attr.placeholder]="placeholder" [disabled]="disabled" [readonly]="readonly"
             (keydown)="onInputKeydown($event)" (keyup)="onInput($event,in.value)" (keypress)="onInputKeyPress($event)" (blur)="onBlur()" (change)="handleChange($event)" (focus)="onFocus()">
             <button type="button" [ngClass]="{'ui-spinner-button ui-spinner-up ui-corner-tr ui-button ui-widget ui-state-default':true,'ui-state-disabled':disabled}" [disabled]="disabled"
@@ -58,6 +58,8 @@ export class Spinner implements OnInit,ControlValueAccessor {
     @Input() thousandSeparator: string = ',';
 
     @Input() tabindex: number;
+    
+    @Input() formatInput: boolean = true;
             
     value: number;
     
@@ -204,7 +206,11 @@ export class Spinner implements OnInit,ControlValueAccessor {
     
     parseValue(val: string): number {
         let value: number;
-        val = val.split(this.thousandSeparator).join('');
+        
+        if(this.formatInput) {
+            val = val.split(this.thousandSeparator).join('');
+        }
+        
         if(val.trim() === '') {
             value= this.min !== undefined ? this.min : null;
         }
@@ -236,7 +242,10 @@ export class Spinner implements OnInit,ControlValueAccessor {
     formatValue(): void {
         if(this.value !== null && this.value !== undefined) {
             let textValue = String(this.value).replace('.', this.decimalSeparator);
-            textValue = textValue.replace(/\B(?=(\d{3})+(?!\d))/g, this.thousandSeparator);
+            
+            if(this.formatInput) {
+                textValue = textValue.replace(/\B(?=(\d{3})+(?!\d))/g, this.thousandSeparator);
+            }
             this.valueAsString = textValue;
         }
         else {
